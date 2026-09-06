@@ -16,22 +16,40 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Unzip Source Code
+      - name: Extract Code and Move Files
         run: |
-          # Perintah ini otomatis mencari file .zip Anda dan mengekstraknya
-          unzip *.zip
-          # Memindahkan semua file hasil ekstrak ke folder utama agar bisa di-build
-          cp -r Vita3K-4089*/* . || true
+          # Ekstrak file zip secara paksa tanpa konfirmasi interaktif
+          unzip -o *.zip
+          
+          # Hapus file zip bawaan agar tidak mengganggu pencarian
+          rm *.zip
+          
+          # Cari nama folder hasil ekstraksi secara otomatis, lalu pindahkan isinya ke folder utama
+          FOLDER_NAME=$(ls -d */ | grep -E 'Vita3K|minimal|fix' | head -n 1)
+          if [ -n "$FOLDER_NAME" ]; then
+            echo "Memindahkan file dari folder: $FOLDER_NAME"
+            cp -r "$FOLDER_NAME".* . 2>/dev/null || true
+            cp -r "$FOLDER_NAME"* . 2>/dev/null || true
+            rm -rf "$FOLDER_NAME"
+          fi
 
-      - name: Install Android NDK & Dependencies
+      - name: Install Android NDK & Ninja
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
 
       - name: Build APK with Gradle
         run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease
+          # Memberikan izin eksekusi pada Gradle Wrapper resmi bawaan Vita3K
+          chmod +x android/gradlew || chmod +x gradlew || true
+          
+          # Masuk ke folder android jika strukturnya memisahkan folder build
+          if [ -d "android" ]; then
+            cd android
+            ./gradlew assembleRelease
+          else
+            ./gradlew assembleRelease
+          fi
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
 
@@ -39,5 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Vita3K-Uncharted-Fix-APK
-          path: app/build/outputs/apk/release/*.apk
-          
+          path: |
+            **/build/outputs/apk/release/*.apk
+            **/build/outputs/apk/debug/*.apk
+            
