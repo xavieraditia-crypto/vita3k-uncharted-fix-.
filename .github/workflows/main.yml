@@ -28,27 +28,20 @@ jobs:
             rm -rf "$FOLDER_NAME"
           fi
 
-      - name: Install Android NDK r26b, CMake & Ninja
+      - name: Install Android NDK & System Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
-          
-          # Unduh dan pasang Android NDK versi 26b secara manual agar stabil
-          echo "Mengunduh Android NDK r26b..."
-          wget -q https://google.com
-          unzip -q android-ndk-r26b-linux.zip
-          mv android-ndk-r26b $HOME/android-ndk
 
       - name: Build APK with Gradle & Vcpkg
         run: |
           chmod +x android/gradlew || chmod +x gradlew || true
           
-          # Atur path lingkungan agar mengarah ke NDK r26b yang baru diunduh
-          export ANDROID_NDK_HOME="$HOME/android-ndk"
+          # Menggunakan Android NDK r26b (26.1.10909125) resmi yang sudah tertanam di server GitHub
+          export ANDROID_NDK_HOME="/usr/local/lib/android/sdk/ndk/26.1.10909125"
           export VCPKG_ROOT="$VCPKG_INSTALLATION_ROOT"
           
-          # Tambahkan argumen override versi NDK pada CMake jika dibutuhkan
-          export PATH="$ANDROID_NDK_HOME:$PATH"
+          echo "Menggunakan NDK dari: $ANDROID_NDK_HOME"
           
           if [ -d "android" ]; then
             cd android
