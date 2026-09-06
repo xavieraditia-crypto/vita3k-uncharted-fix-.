@@ -27,12 +27,24 @@ jobs:
           sdkmanager "platforms;android-28"
           sdkmanager "build-tools;35.0.0"
           sdkmanager "cmake;3.22.1"
-          sdkmanager "ndk;26.1.10909125"
+          sdkmanager "ndk;29.0.14206865"
 
       - name: Install Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip ninja-build cmake
+          sudo apt-get install -y unzip ninja-build
+
+      - name: Setup vcpkg
+        shell: bash
+        run: |
+          if [ -d "/usr/local/share/vcpkg" ]; then
+            echo "VCPKG_ROOT=/usr/local/share/vcpkg" >> "$GITHUB_ENV"
+          elif [ -d "$VCPKG_INSTALLATION_ROOT" ]; then
+            echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
+          else
+            echo "ERROR: vcpkg tidak ditemukan."
+            exit 1
+          fi
 
       - name: Extract Vita3K ZIP
         shell: bash
@@ -43,8 +55,6 @@ jobs:
             echo "ERROR: File ZIP Vita3K tidak ditemukan."
             exit 1
           fi
-
-          echo "ZIP ditemukan: $ZIP_FILE"
 
           mkdir -p extracted
           unzip -o "$ZIP_FILE" -d extracted
@@ -59,25 +69,23 @@ jobs:
 
           if [ -z "$ANDROID_DIR" ]; then
             echo "ERROR: gradlew tidak ditemukan di dalam ZIP."
-            echo "Isi ZIP:"
-            find extracted -maxdepth 4 -type f | head -200
             exit 1
           fi
 
           echo "Android project ditemukan di: $ANDROID_DIR"
           echo "ANDROID_PROJECT=$ANDROID_DIR" >> "$GITHUB_ENV"
 
-      - name: Prepare Gradle
+      - name: Prepare Environment
         shell: bash
         run: |
           chmod +x "$ANDROID_PROJECT/gradlew"
 
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125"
-          echo "CMAKE_HOME=$ANDROID_SDK_ROOT/cmake/3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+          echo "VCPKG_ROOT=$VCPKG_ROOT"
 
-          test -d "$ANDROID_SDK_ROOT/ndk/26.1.10909125"
-          test -d "$ANDROID_SDK_ROOT/cmake/3.22.1"
+          test -d "$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+          test -d "$VCPKG_ROOT"
 
       - name: Build Release APK
         shell: bash
@@ -85,15 +93,16 @@ jobs:
           VCPKG_FORCE_SYSTEM_BINARIES: "1"
         run: |
           export ANDROID_HOME="$ANDROID_SDK_ROOT"
-          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/26.1.10909125"
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
           export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
+          export VCPKG_ROOT="$VCPKG_ROOT"
 
           export PATH="$ANDROID_SDK_ROOT/cmake/3.22.1/bin:$ANDROID_NDK_HOME:$PATH"
 
           cd "$ANDROID_PROJECT"
 
           ./gradlew clean assembleRelease \
-            -Pandroid.ndkVersion=26.1.10909125 \
+            -Pandroid.ndkVersion=29.0.14206865 \
             --no-daemon \
             --stacktrace
 
