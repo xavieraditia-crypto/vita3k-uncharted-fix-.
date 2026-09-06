@@ -28,24 +28,33 @@ jobs:
             rm -rf "$FOLDER_NAME"
           fi
 
-      - name: Install Android NDK, CMake & Ninja
+      - name: Install Android NDK r26b, CMake & Ninja
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
+          
+          # Unduh dan pasang Android NDK versi 26b secara manual agar stabil
+          echo "Mengunduh Android NDK r26b..."
+          wget -q https://google.com
+          unzip -q android-ndk-r26b-linux.zip
+          mv android-ndk-r26b $HOME/android-ndk
 
       - name: Build APK with Gradle & Vcpkg
         run: |
           chmod +x android/gradlew || chmod +x gradlew || true
           
-          # Mendeteksi letak vcpkg bawaan di dalam server virtual runner GitHub
+          # Atur path lingkungan agar mengarah ke NDK r26b yang baru diunduh
+          export ANDROID_NDK_HOME="$HOME/android-ndk"
           export VCPKG_ROOT="$VCPKG_INSTALLATION_ROOT"
-          echo "VCPKG_ROOT diset ke: $VCPKG_ROOT"
+          
+          # Tambahkan argumen override versi NDK pada CMake jika dibutuhkan
+          export PATH="$ANDROID_NDK_HOME:$PATH"
           
           if [ -d "android" ]; then
             cd android
-            ./gradlew assembleRelease
+            ./gradlew assembleRelease -Pandroid.ndkVersion=26.1.10909125
           else
-            ./gradlew assembleRelease
+            ./gradlew assembleRelease -Pandroid.ndkVersion=26.1.10909125
           fi
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
