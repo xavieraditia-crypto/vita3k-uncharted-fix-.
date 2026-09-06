@@ -1,0 +1,43 @@
+name: Build Vita3K APK From Zip
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Unzip Source Code
+        run: |
+          # Perintah ini otomatis mencari file .zip Anda dan mengekstraknya
+          unzip *.zip
+          # Memindahkan semua file hasil ekstrak ke folder utama agar bisa di-build
+          cp -r Vita3K-4089*/* . || true
+
+      - name: Install Android NDK & Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+
+      - name: Build APK with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vita3K-Uncharted-Fix-APK
+          path: app/build/outputs/apk/release/*.apk
+          
