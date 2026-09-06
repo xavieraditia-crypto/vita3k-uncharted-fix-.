@@ -18,13 +18,8 @@ jobs:
 
       - name: Extract Code and Move Files
         run: |
-          # Ekstrak file zip secara paksa tanpa konfirmasi interaktif
           unzip -o *.zip
-          
-          # Hapus file zip bawaan agar tidak mengganggu pencarian
           rm *.zip
-          
-          # Cari nama folder hasil ekstraksi secara otomatis, lalu pindahkan isinya ke folder utama
           FOLDER_NAME=$(ls -d */ | grep -E 'Vita3K|minimal|fix' | head -n 1)
           if [ -n "$FOLDER_NAME" ]; then
             echo "Memindahkan file dari folder: $FOLDER_NAME"
@@ -33,17 +28,19 @@ jobs:
             rm -rf "$FOLDER_NAME"
           fi
 
-      - name: Install Android NDK & Ninja
+      - name: Install Android NDK, CMake & Ninja
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
 
-      - name: Build APK with Gradle
+      - name: Build APK with Gradle & Vcpkg
         run: |
-          # Memberikan izin eksekusi pada Gradle Wrapper resmi bawaan Vita3K
           chmod +x android/gradlew || chmod +x gradlew || true
           
-          # Masuk ke folder android jika strukturnya memisahkan folder build
+          # Mendeteksi letak vcpkg bawaan di dalam server virtual runner GitHub
+          export VCPKG_ROOT="$VCPKG_INSTALLATION_ROOT"
+          echo "VCPKG_ROOT diset ke: $VCPKG_ROOT"
+          
           if [ -d "android" ]; then
             cd android
             ./gradlew assembleRelease
